@@ -2,8 +2,10 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import fs from 'fs';
 import Transaction, { CATEGORIES } from './models/Transaction.js';
-
 dotenv.config();
 
 const app = express();
@@ -12,22 +14,40 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-// Mock DB fallback (used when no MONGO_URI is provided)
-let isMockDB = false;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Use local file as DB instead of MongoDB
+let isMockDB = true;
 let mockTransactions = [];
 let mockIdCounter = 1;
 
-if (process.env.MONGO_URI) {
-  mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log('✅ Connected to MongoDB'))
-    .catch(err => {
-      console.error('❌ Failed to connect to MongoDB, using mock DB:', err.message);
-      isMockDB = true;
-    });
-} else {
-  console.log('⚠️  No MONGO_URI provided — using in-memory mock DB.');
-  isMockDB = true;
+const dataFile = path.join(__dirname, 'data.json');
+
+// Load existing data from file if it exists
+if (fs.existsSync(dataFile)) {
+  try {
+    const data = fs.readFileSync(dataFile, 'utf-8');
+    mockTransactions = JSON.parse(data);
+    if (mockTransactions.length > 0) {
+      const maxId = Math.max(...mockTransactions.map(t => parseInt(t._id, 10) || 0));
+      mockIdCounter = maxId + 1;
+    }
+  } catch (err) {
+    console.error('❌ Error reading local data file:', err);
+  }
 }
+
+// Helper to save data to file
+const saveMockData = () => {
+  try {
+    fs.writeFileSync(dataFile, JSON.stringify(mockTransactions, null, 2));
+  } catch (err) {
+    console.error('❌ Error writing to local data file:', err);
+  }
+};
+
+console.log('⚠️ Using local file DB (data.json) as requested.');
 
 // ─── Helper: filter by month/year ──────────────────────────────────────────
 const filterByDate = (transactions, month, year) => {
@@ -76,8 +96,9 @@ app.post('/api/transactions', async (req, res) => {
   }
 
   if (isMockDB) {
-    const newTx = { _id: String(mockIdCounter++), type, description, value, category, date: new Date() };
+    const newTx = { _id: String(mockIdCounter++), type, description, value, category, date: new Date().toISOString() };
     mockTransactions.push(newTx);
+    saveMockData();
     return res.status(201).json(newTx);
   }
 
@@ -96,6 +117,7 @@ app.delete('/api/transactions/:id', async (req, res) => {
 
   if (isMockDB) {
     mockTransactions = mockTransactions.filter(t => t._id !== id);
+    saveMockData();
     return res.json({ success: true });
   }
 
@@ -124,7 +146,8 @@ app.put('/api/transactions/:id', async (req, res) => {
     if (description !== undefined) mockTransactions[index].description = description;
     if (value       !== undefined) mockTransactions[index].value       = value;
     if (category    !== undefined) mockTransactions[index].category    = category;
-
+    
+    saveMockData();
     return res.json(mockTransactions[index]);
   }
 
@@ -191,6 +214,15 @@ app.get('/api/summary', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+app.use(express.static(path.join(__dirname, '../../Frontend/client/dist')));
+app.get(/.*/, (req, res) => {
+  res.sendFile(path.join(__dirname, '../../Frontend/client/dist/index.html'));
+});
+
+const server = app.listen(PORT, '127.0.0.1', () => {
+  console.log(`🚀 Server running on http://127.0.0.1:${PORT}`);
+});
+
+server.on('error', (err) => {
+  console.error('❌ Server error:', err);
 });
