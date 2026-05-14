@@ -1,5 +1,11 @@
 import mongoose from 'mongoose';
 
+const CATEGORIES = [
+  'Salary', 'Freelance', 'Investment', 'Gift', 'Other Income',
+  'Food', 'Rent', 'Transport', 'Entertainment', 'Healthcare',
+  'Utilities', 'Shopping', 'Education', 'Travel', 'Other Expense'
+];
+
 const transactionSchema = new mongoose.Schema({
   type: {
     type: String,
@@ -8,11 +14,19 @@ const transactionSchema = new mongoose.Schema({
   },
   description: {
     type: String,
-    required: true
+    required: true,
+    trim: true
   },
   value: {
     type: Number,
-    required: true
+    required: true,
+    min: [0.01, 'Value must be greater than 0']
+  },
+  category: {
+    type: String,
+    required: true,
+    enum: CATEGORIES,
+    default: 'Other Expense'
   },
   date: {
     type: Date,
@@ -20,4 +34,5 @@ const transactionSchema = new mongoose.Schema({
   }
 });
 
+export { CATEGORIES };
 export default mongoose.model('Transaction', transactionSchema);

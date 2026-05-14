@@ -1,0 +1,25 @@
+{
+  "name": "updated-budget-calculator",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "concurrently \"npm start --prefix Backend/server\" \"npm run dev --prefix Frontend/client\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jijomathew05/Updated-budget-calculator.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/jijomathew05/Updated-budget-calculator/issues"
+  },
+  "homepage": "https://github.com/jijomathew05/Updated-budget-calculator#readme",
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
