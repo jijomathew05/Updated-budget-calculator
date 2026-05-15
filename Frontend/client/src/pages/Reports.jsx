@@ -3,8 +3,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer
 } from 'recharts';
-
-const API_BASE = import.meta.env.VITE_API_URL?.replace('/api/transactions', '') || 'http://localhost:5000';
+import { fetchSummary } from '../services/api';
 
 const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -33,12 +32,10 @@ const Reports = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchSummary = async () => {
+    const loadSummary = async () => {
       try {
         setIsLoading(true);
-        const res = await fetch(`${API_BASE}/api/summary?months=6`);
-        if (!res.ok) throw new Error('Failed to fetch summary');
-        const raw = await res.json();
+        const raw = await fetchSummary(6);
         // Format for chart: { month: 'Jan 2026', income: X, expense: Y }
         const formatted = raw.map(d => ({
           month: `${MONTHS_SHORT[d.month - 1]} ${d.year}`,
@@ -52,7 +49,7 @@ const Reports = () => {
         setIsLoading(false);
       }
     };
-    fetchSummary();
+    loadSummary();
   }, []);
 
   const totalIncome  = summaryData.reduce((a, d) => a + d.Income,   0);

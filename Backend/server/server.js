@@ -4,12 +4,13 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import fs from 'fs';
 import Transaction, { CATEGORIES } from './models/Transaction.js';
+
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/budget-calculator';
 
 app.use(cors());
 app.use(express.json());
@@ -17,56 +18,28 @@ app.use(express.json());
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Use local file as DB instead of MongoDB
-let isMockDB = true;
-let mockTransactions = [];
-let mockIdCounter = 1;
-
-const dataFile = path.join(__dirname, 'data.json');
-
-// Load existing data from file if it exists
-if (fs.existsSync(dataFile)) {
+// ─── MongoDB Connection ─────────────────────────────────────────────────────
+const connectDB = async () => {
   try {
-    const data = fs.readFileSync(dataFile, 'utf-8');
-    mockTransactions = JSON.parse(data);
-    if (mockTransactions.length > 0) {
-      const maxId = Math.max(...mockTransactions.map(t => parseInt(t._id, 10) || 0));
-      mockIdCounter = maxId + 1;
-    }
+    await mongoose.connect(MONGODB_URI);
+    console.log('✅ Connected to MongoDB');
   } catch (err) {
-    console.error('❌ Error reading local data file:', err);
-  }
-}
-
-// Helper to save data to file
-const saveMockData = () => {
-  try {
-    fs.writeFileSync(dataFile, JSON.stringify(mockTransactions, null, 2));
-  } catch (err) {
-    console.error('❌ Error writing to local data file:', err);
+    console.error('❌ MongoDB connection error:', err.message);
+    process.exit(1);
   }
 };
 
-console.log('⚠️ Using local file DB (data.json) as requested.');
+mongoose.connection.on('disconnected', () => {
+  console.warn('⚠️ MongoDB disconnected. Attempting reconnect…');
+});
 
-// ─── Helper: filter by month/year ──────────────────────────────────────────
-const filterByDate = (transactions, month, year) => {
-  if (!month || !year) return transactions;
-  const m = parseInt(month, 10); // 1-12
-  const y = parseInt(year, 10);
-  return transactions.filter(t => {
-    const d = new Date(t.date);
-    return d.getMonth() + 1 === m && d.getFullYear() === y;
-  });
-};
+mongoose.connection.on('error', (err) => {
+  console.error('❌ MongoDB connection error:', err.message);
+});
 
 // ─── GET /api/transactions?month=5&year=2026 ────────────────────────────────
 app.get('/api/transactions', async (req, res) => {
   const { month, year } = req.query;
-
-  if (isMockDB) {
-    return res.json(filterByDate(mockTransactions, month, year));
-  }
 
   try {
     let query = {};
@@ -95,13 +68,6 @@ app.post('/api/transactions', async (req, res) => {
     return res.status(400).json({ error: 'Value must be greater than 0' });
   }
 
-  if (isMockDB) {
-    const newTx = { _id: String(mockIdCounter++), type, description, value, category, date: new Date().toISOString() };
-    mockTransactions.push(newTx);
-    saveMockData();
-    return res.status(201).json(newTx);
-  }
-
   try {
     const transaction = new Transaction({ type, description, value, category });
     const saved = await transaction.save();
@@ -114,12 +80,6 @@ app.post('/api/transactions', async (req, res) => {
 // ─── DELETE /api/transactions/:id ───────────────────────────────────────────
 app.delete('/api/transactions/:id', async (req, res) => {
   const { id } = req.params;
-
-  if (isMockDB) {
-    mockTransactions = mockTransactions.filter(t => t._id !== id);
-    saveMockData();
-    return res.json({ success: true });
-  }
 
   try {
     const deleted = await Transaction.findByIdAndDelete(id);
@@ -137,18 +97,6 @@ app.put('/api/transactions/:id', async (req, res) => {
 
   if (value !== undefined && value <= 0) {
     return res.status(400).json({ error: 'Value must be greater than 0' });
-  }
-
-  if (isMockDB) {
-    const index = mockTransactions.findIndex(t => t._id === id);
-    if (index === -1) return res.status(404).json({ error: 'Transaction not found' });
-
-    if (description !== undefined) mockTransactions[index].description = description;
-    if (value       !== undefined) mockTransactions[index].value       = value;
-    if (category    !== undefined) mockTransactions[index].category    = category;
-    
-    saveMockData();
-    return res.json(mockTransactions[index]);
   }
 
   try {
@@ -185,16 +133,6 @@ app.get('/api/summary', async (req, res) => {
     periods.push({ year: d.getFullYear(), month: d.getMonth() + 1 });
   }
 
-  if (isMockDB) {
-    const result = periods.map(({ year, month }) => {
-      const filtered = filterByDate(mockTransactions, month, year);
-      const income  = filtered.filter(t => t.type === 'income') .reduce((a, t) => a + t.value, 0);
-      const expense = filtered.filter(t => t.type === 'expense').reduce((a, t) => a + t.value, 0);
-      return { year, month, income, expense };
-    });
-    return res.json(result);
-  }
-
   try {
     const earliest = new Date(periods[0].year, periods[0].month - 1, 1);
     const txs = await Transaction.find({ date: { $gte: earliest } });
@@ -214,15 +152,34 @@ app.get('/api/summary', async (req, res) => {
   }
 });
 
+// ─── Serve Frontend (production) ────────────────────────────────────────────
 app.use(express.static(path.join(__dirname, '../../Frontend/client/dist')));
 app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, '../../Frontend/client/dist/index.html'));
 });
 
-const server = app.listen(PORT, '127.0.0.1', () => {
-  console.log(`🚀 Server running on http://127.0.0.1:${PORT}`);
-});
+// ─── Start Server ───────────────────────────────────────────────────────────
+const startServer = async () => {
+  await connectDB();
 
-server.on('error', (err) => {
-  console.error('❌ Server error:', err);
-});
+  const server = app.listen(PORT, '0.0.0.0', () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+  });
+
+  server.on('error', (err) => {
+    console.error('❌ Server error:', err);
+  });
+
+  // Graceful shutdown
+  const shutdown = async () => {
+    console.log('\n🛑 Shutting down gracefully…');
+    server.close();
+    await mongoose.connection.close();
+    process.exit(0);
+  };
+
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
+};
+
+startServer();

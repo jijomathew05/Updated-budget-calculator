@@ -1,10 +1,13 @@
 {
   "name": "updated-budget-calculator",
   "version": "1.0.0",
-  "description": "",
+  "description": "A full-stack budget calculator built with React, Express, and MongoDB",
   "main": "index.js",
   "scripts": {
+    "install-all": "npm install && cd Backend/server && npm install && cd ../../Frontend/client && npm install",
     "dev": "concurrently \"npm start --prefix Backend/server\" \"npm run dev --prefix Frontend/client\"",
+    "build": "cd Frontend/client && npm run build",
+    "start": "node Backend/server/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
