@@ -1,10 +1,11 @@
 import { NavLink } from 'react-router-dom';
 
 const NAV_ITEMS = [
-  { to: '/',              label: 'Dashboard',    icon: '📊' },
-  { to: '/transactions',  label: 'Transactions', icon: '💳' },
-  { to: '/reports',       label: 'Reports',      icon: '📈' },
-  { to: '/settings',      label: 'Settings',     icon: '⚙️'  },
+  { to: '/',                 label: 'Dashboard',    icon: '📊' },
+  { to: '/add-transaction',  label: 'Add Entry',    icon: '➕' },
+  { to: '/history',          label: 'History',      icon: '📜' },
+  { to: '/reports',          label: 'Reports',      icon: '📈' },
+  { to: '/settings',         label: 'Settings',     icon: '⚙️' },
 ];
 
 const Sidebar = () => (
