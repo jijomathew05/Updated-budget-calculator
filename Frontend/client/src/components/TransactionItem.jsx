@@ -18,6 +18,8 @@ const TransactionItem = ({ item, totalIncome, onDelete, onUpdate }) => {
   const [editDesc,    setEditDesc]    = useState(item.description);
   const [editValue,   setEditValue]   = useState(item.value);
   const [editCategory, setEditCategory] = useState(item.category || '');
+  const [editDate,     setEditDate]     = useState(new Date(item.date).toISOString().split('T')[0]);
+  const [editTime,     setEditTime]     = useState(new Date(item.date).toTimeString().split(' ')[0].slice(0, 5));
 
   const isExpense  = item.type === 'expense';
   const categories = isExpense ? EXPENSE_CATEGORIES : INCOME_CATEGORIES;
@@ -27,10 +29,16 @@ const TransactionItem = ({ item, totalIncome, onDelete, onUpdate }) => {
 
   const handleSave = () => {
     if (!editDesc.trim() || parseFloat(editValue) <= 0) return;
+    const localDate = new Date(`${editDate}T${editTime}`);
+    if (isNaN(localDate.getTime())) {
+      console.error("Invalid edit date or time:", editDate, editTime);
+      return;
+    }
     onUpdate(item._id, {
       description: editDesc.trim(),
       value: parseFloat(editValue),
-      category: editCategory
+      category: editCategory,
+      date: localDate.toISOString()
     });
     setIsEditing(false);
   };
@@ -39,6 +47,8 @@ const TransactionItem = ({ item, totalIncome, onDelete, onUpdate }) => {
     setEditDesc(item.description);
     setEditValue(item.value);
     setEditCategory(item.category || '');
+    setEditDate(new Date(item.date).toISOString().split('T')[0]);
+    setEditTime(new Date(item.date).toTimeString().split(' ')[0].slice(0, 5));
     setIsEditing(false);
   };
 
@@ -61,6 +71,18 @@ const TransactionItem = ({ item, totalIncome, onDelete, onUpdate }) => {
             onChange={(e) => setEditValue(e.target.value)}
             min="0.01"
             step="0.01"
+          />
+          <input
+            className="edit__date"
+            type="date"
+            value={editDate}
+            onChange={(e) => setEditDate(e.target.value)}
+          />
+          <input
+            className="edit__time"
+            type="time"
+            value={editTime}
+            onChange={(e) => setEditTime(e.target.value)}
           />
           <select
             className="edit__category"
@@ -87,6 +109,15 @@ const TransactionItem = ({ item, totalIncome, onDelete, onUpdate }) => {
         {item.category && (
           <span className="item__category-badge">{item.category}</span>
         )}
+        <div className="item__date-label">
+          {new Date(item.date).toLocaleDateString(undefined, { 
+            day: 'numeric', 
+            month: 'short', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          })}
+        </div>
       </div>
       <div className="right clearfix">
         <div className="item__value">

@@ -10,14 +10,15 @@ const formatNumber = (num, tType) => {
   return (tType === 'income' ? '+ ' : '- ') + int + '.' + dec;
 };
 
-const BudgetHeader = ({ budget, totalIncome, totalExpense, percentage }) => {
-  const currentDate = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
+const BudgetHeader = ({ budget, totalIncome, totalExpense, percentage, selectedMonth, selectedYear }) => {
+  const monthName = new Date(selectedYear, selectedMonth - 1).toLocaleString('default', { month: 'long' });
+  const displayDate = `${monthName} ${selectedYear}`;
 
   return (
     <div className="top">
       <div className="budget">
         <div className="budget__title">
-          Available Budget in <span className="budget__title--month">{currentDate}</span>:
+          Available Budget in <span className="budget__title--month">{displayDate}</span>:
         </div>
         <div className="budget__value">
           {budget >= 0 ? formatNumber(budget, 'income') : formatNumber(budget, 'expense')}

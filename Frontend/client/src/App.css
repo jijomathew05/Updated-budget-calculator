@@ -349,6 +349,32 @@ body {
 
 .add__description { width: 400px;}
 .add__value { width: 100px;}
+.add__date {
+  border: 1px solid #e7e7e7;
+  background-color: #fff;
+  color: inherit;
+  font-family: inherit;
+  font-size: 14px;
+  padding: 12px 10px;
+  margin-right: 10px;
+  border-radius: 5px;
+  transition: border 0.3s;
+  width: 140px;
+}
+.add__date:focus { outline: none; border: 1px solid #28B9B5; }
+.add__time {
+  border: 1px solid #e7e7e7;
+  background-color: #fff;
+  color: inherit;
+  font-family: inherit;
+  font-size: 14px;
+  padding: 12px 10px;
+  margin-right: 10px;
+  border-radius: 5px;
+  transition: border 0.3s;
+  width: 100px;
+}
+.add__time:focus { outline: none; border: 1px solid #28B9B5; }
 
 .add__btn {
   font-size: 25px;
@@ -408,6 +434,12 @@ h2 {
 
 .item__description {
   float: left;
+}
+
+.item__date-label {
+  font-size: 11px;
+  color: #aaa;
+  margin-top: 4px;
 }
 
 .item__value {
@@ -648,6 +680,24 @@ h2 {
   padding: 6px 10px;
   font-size: 14px;
   color: #333;
+}
+.edit__date {
+  width: 130px;
+  border: 1px solid #28B9B5;
+  border-radius: 5px;
+  padding: 6px 10px;
+  font-size: 14px;
+  color: #333;
+  background: #fff;
+}
+.edit__time {
+  width: 100px;
+  border: 1px solid #28B9B5;
+  border-radius: 5px;
+  padding: 6px 10px;
+  font-size: 14px;
+  color: #333;
+  background: #fff;
 }
 .edit__category {
   border: 1px solid #28B9B5;

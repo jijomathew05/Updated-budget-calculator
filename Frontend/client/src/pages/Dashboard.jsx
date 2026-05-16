@@ -1,5 +1,4 @@
 import { useBudget } from '../context/BudgetContext';
-import BudgetHeader from '../components/BudgetHeader';
 import ExpenseChart from '../components/ExpenseChart';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -77,7 +76,9 @@ const Dashboard = () => {
                 <div key={t._id} className={`recent-item recent-item--${t.type}`}>
                   <div>
                     <p className="recent-item__desc">{t.description}</p>
-                    <p className="recent-item__cat">{t.category}</p>
+                    <p className="recent-item__cat">
+                      {t.category} • {new Date(t.date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    </p>
                   </div>
                   <span className="recent-item__val">
                     {t.type === 'income' ? '+' : '-'} {fmt(t.value)}

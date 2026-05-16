@@ -52,11 +52,15 @@ export const BudgetProvider = ({ children }) => {
     try {
       setError(null);
       
-      // If adding to a different month/year than current, set the date accordingly
-      const now = new Date();
-      let txDate = now;
-      if (selectedMonth !== (now.getMonth() + 1) || selectedYear !== now.getFullYear()) {
-        txDate = new Date(selectedYear, selectedMonth - 1, 1);
+      // Use the provided date if it exists (from the new date picker)
+      // Otherwise fallback to the smart-date logic
+      let txDate = data.date;
+      if (!txDate) {
+        const now = new Date();
+        txDate = now;
+        if (selectedMonth !== (now.getUTCMonth() + 1) || selectedYear !== now.getUTCFullYear()) {
+          txDate = new Date(Date.UTC(selectedYear, selectedMonth - 1, 15, 12, 0, 0));
+        }
       }
 
       const newTx = await createTransaction({ ...data, date: txDate });

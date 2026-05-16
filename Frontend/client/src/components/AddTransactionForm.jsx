@@ -9,6 +9,8 @@ const AddTransactionForm = ({ onAdd }) => {
   const [description, setDescription] = useState('');
   const [value,       setValue]       = useState('');
   const [category,    setCategory]    = useState('Salary');
+  const [date,        setDate]        = useState(new Date().toISOString().split('T')[0]);
+  const [time,        setTime]        = useState(new Date().toTimeString().split(' ')[0].slice(0, 5));
 
   // Reset category to a safe default when type changes
   const handleTypeChange = (e) => {
@@ -23,11 +25,19 @@ const AddTransactionForm = ({ onAdd }) => {
     e.preventDefault();
     if (!description.trim() || !value || parseFloat(value) <= 0) return;
 
-    onAdd({ type, description: description.trim(), value: parseFloat(value), category });
+    const localDate = new Date(`${date}T${time}`);
+    if (isNaN(localDate.getTime())) {
+      console.error("Invalid date or time selected:", date, time);
+      return;
+    }
+    onAdd({ type, description: description.trim(), value: parseFloat(value), category, date: localDate.toISOString() });
 
     setDescription('');
     setValue('');
     setCategory(type === 'income' ? 'Salary' : 'Food');
+    const now = new Date();
+    setDate(now.toISOString().split('T')[0]);
+    setTime(now.toTimeString().split(' ')[0].slice(0, 5));
   };
 
   return (
@@ -61,6 +71,24 @@ const AddTransactionForm = ({ onAdd }) => {
           onChange={(e) => setValue(e.target.value)}
           min="0.01"
           step="0.01"
+        />
+
+        <input
+          id="add-date"
+          type="date"
+          className="add__date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          required
+        />
+
+        <input
+          id="add-time"
+          type="time"
+          className="add__time"
+          value={time}
+          onChange={(e) => setTime(e.target.value)}
+          required
         />
 
         <select

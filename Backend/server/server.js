@@ -46,8 +46,9 @@ app.get('/api/transactions', async (req, res) => {
     if (month && year) {
       const m = parseInt(month, 10);
       const y = parseInt(year, 10);
-      const start = new Date(y, m - 1, 1);         // first day of month
-      const end   = new Date(y, m, 1);              // first day of next month
+      // Use UTC boundaries to ensure consistency regardless of server timezone
+      const start = new Date(Date.UTC(y, m - 1, 1));
+      const end   = new Date(Date.UTC(y, m, 1));
       query.date  = { $gte: start, $lt: end };
     }
     const transactions = await Transaction.find(query).sort({ date: -1 });
@@ -99,7 +100,7 @@ app.delete('/api/transactions/:id', async (req, res) => {
 // ─── PUT /api/transactions/:id ──────────────────────────────────────────────
 app.put('/api/transactions/:id', async (req, res) => {
   const { id } = req.params;
-  const { description, value, category } = req.body;
+  const { description, value, category, date } = req.body;
 
   if (value !== undefined && value <= 0) {
     return res.status(400).json({ error: 'Value must be greater than 0' });
@@ -110,6 +111,7 @@ app.put('/api/transactions/:id', async (req, res) => {
     if (description !== undefined) updateData.description = description;
     if (value       !== undefined) updateData.value       = value;
     if (category    !== undefined) updateData.category    = category;
+    if (date        !== undefined) updateData.date        = date;
 
     const updated = await Transaction.findByIdAndUpdate(
       id, updateData, { new: true, runValidators: true }
@@ -131,22 +133,40 @@ app.get('/api/categories', (_req, res) => {
 app.get('/api/summary', async (req, res) => {
   const numMonths = Math.min(parseInt(req.query.months || '6', 10), 24);
 
-  // Build list of {year, month} for the last N months
+  // Build list of {year, month} for the range.
+  // If we have future transactions, extend the range to include them.
   const periods = [];
-  const ref = new Date();
-  for (let i = numMonths - 1; i >= 0; i--) {
-    const d = new Date(ref.getFullYear(), ref.getMonth() - i, 1);
-    periods.push({ year: d.getFullYear(), month: d.getMonth() + 1 });
+  try {
+    const now = new Date();
+    // Always include at least the next month to show upcoming budget planning
+    let endRef = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+    
+    const latestTx = await Transaction.findOne().sort({ date: -1 });
+    if (latestTx && latestTx.date > endRef) {
+      endRef = new Date(latestTx.date);
+    }
+
+    for (let i = numMonths - 1; i >= 0; i--) {
+      const d = new Date(Date.UTC(endRef.getUTCFullYear(), endRef.getUTCMonth() - i, 1));
+      periods.push({ year: d.getUTCFullYear(), month: d.getUTCMonth() + 1 });
+    }
+  } catch (err) {
+    // Fallback to current date if DB query fails
+    const ref = new Date();
+    for (let i = numMonths - 1; i >= 0; i--) {
+      const d = new Date(Date.UTC(ref.getUTCFullYear(), ref.getUTCMonth() - i, 1));
+      periods.push({ year: d.getUTCFullYear(), month: d.getUTCMonth() + 1 });
+    }
   }
 
   try {
-    const earliest = new Date(periods[0].year, periods[0].month - 1, 1);
+    const earliest = new Date(Date.UTC(periods[0].year, periods[0].month - 1, 1));
     const txs = await Transaction.find({ date: { $gte: earliest } });
 
     const result = periods.map(({ year, month }) => {
       const filtered = txs.filter(t => {
         const d = new Date(t.date);
-        return d.getFullYear() === year && d.getMonth() + 1 === month;
+        return d.getUTCFullYear() === year && d.getUTCMonth() + 1 === month;
       });
       const income  = filtered.filter(t => t.type === 'income') .reduce((a, t) => a + t.value, 0);
       const expense = filtered.filter(t => t.type === 'expense').reduce((a, t) => a + t.value, 0);
