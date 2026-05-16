@@ -59,7 +59,7 @@ app.get('/api/transactions', async (req, res) => {
 
 // ─── POST /api/transactions ─────────────────────────────────────────────────
 app.post('/api/transactions', async (req, res) => {
-  const { type, description, value, category } = req.body;
+  const { type, description, value, category, date } = req.body;
 
   if (!type || !description || value == null || !category) {
     return res.status(400).json({ error: 'Missing required fields: type, description, value, category' });
@@ -69,7 +69,13 @@ app.post('/api/transactions', async (req, res) => {
   }
 
   try {
-    const transaction = new Transaction({ type, description, value, category });
+    const transaction = new Transaction({ 
+      type, 
+      description, 
+      value, 
+      category,
+      date: date || undefined 
+    });
     const saved = await transaction.save();
     res.status(201).json(saved);
   } catch (err) {

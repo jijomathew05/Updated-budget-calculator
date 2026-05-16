@@ -51,7 +51,15 @@ export const BudgetProvider = ({ children }) => {
   const handleAdd = async (data) => {
     try {
       setError(null);
-      const newTx = await createTransaction(data);
+      
+      // If adding to a different month/year than current, set the date accordingly
+      const now = new Date();
+      let txDate = now;
+      if (selectedMonth !== (now.getMonth() + 1) || selectedYear !== now.getFullYear()) {
+        txDate = new Date(selectedYear, selectedMonth - 1, 1);
+      }
+
+      const newTx = await createTransaction({ ...data, date: txDate });
       setTransactions(prev => [newTx, ...prev]);
     } catch (err) { setError(err.message || 'Failed to add transaction.'); }
   };
