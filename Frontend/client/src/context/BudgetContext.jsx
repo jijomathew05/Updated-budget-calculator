@@ -3,6 +3,7 @@ import { fetchTransactions, createTransaction, updateTransaction, deleteTransact
 
 const BudgetContext = createContext(null);
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useBudget = () => {
   const ctx = useContext(BudgetContext);
   if (!ctx) throw new Error('useBudget must be used inside BudgetProvider');
@@ -24,7 +25,7 @@ export const BudgetProvider = ({ children }) => {
       setError(null);
       const data = await fetchTransactions({ month: selectedMonth, year: selectedYear });
       setTransactions(data);
-    } catch (err) {
+    } catch {
       setError('Failed to load transactions. Is the backend running?');
     } finally {
       setIsLoading(false);

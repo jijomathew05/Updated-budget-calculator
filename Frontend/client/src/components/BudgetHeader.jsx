@@ -1,5 +1,3 @@
-import React from 'react';
-
 const formatNumber = (num, tType) => {
   if (num === null || num === undefined) return '0.00';
   num = Math.abs(num).toFixed(2);

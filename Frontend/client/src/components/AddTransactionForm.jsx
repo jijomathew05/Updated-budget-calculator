@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 const INCOME_CATEGORIES  = ['Salary', 'Freelance', 'Investment', 'Gift', 'Other Income'];
 const EXPENSE_CATEGORIES = ['Food', 'Rent', 'Transport', 'Entertainment', 'Healthcare',
@@ -26,10 +26,7 @@ const AddTransactionForm = ({ onAdd }) => {
     if (!description.trim() || !value || parseFloat(value) <= 0) return;
 
     const localDate = new Date(`${date}T${time}`);
-    if (isNaN(localDate.getTime())) {
-      console.error("Invalid date or time selected:", date, time);
-      return;
-    }
+    if (isNaN(localDate.getTime())) return;
     onAdd({ type, description: description.trim(), value: parseFloat(value), category, date: localDate.toISOString() });
 
     setDescription('');

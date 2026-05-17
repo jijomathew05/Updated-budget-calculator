@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 const INCOME_CATEGORIES  = ['Salary', 'Freelance', 'Investment', 'Gift', 'Other Income'];
 const EXPENSE_CATEGORIES = ['Food', 'Rent', 'Transport', 'Entertainment', 'Healthcare',
@@ -30,10 +30,7 @@ const TransactionItem = ({ item, totalIncome, onDelete, onUpdate }) => {
   const handleSave = () => {
     if (!editDesc.trim() || parseFloat(editValue) <= 0) return;
     const localDate = new Date(`${editDate}T${editTime}`);
-    if (isNaN(localDate.getTime())) {
-      console.error("Invalid edit date or time:", editDate, editTime);
-      return;
-    }
+    if (isNaN(localDate.getTime())) return;
     onUpdate(item._id, {
       description: editDesc.trim(),
       value: parseFloat(editValue),

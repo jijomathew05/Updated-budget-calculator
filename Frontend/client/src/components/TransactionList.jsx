@@ -1,4 +1,3 @@
-import React from 'react';
 import TransactionItem from './TransactionItem';
 
 const TransactionList = ({ transactions, totalIncome, onDelete, onUpdate }) => {
