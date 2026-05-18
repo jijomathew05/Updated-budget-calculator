@@ -1,4 +1,7 @@
-const BASE_URL = import.meta.env.VITE_API_URL || '/api';
+let BASE_URL = import.meta.env.VITE_API_URL || '/api';
+if (BASE_URL.endsWith('/transactions')) {
+  BASE_URL = BASE_URL.slice(0, -13);
+}
 
 // ── Shared fetch wrapper ────────────────────────────────────────────────────
 const request = async (url, options = {}) => {
