@@ -5,12 +5,33 @@ if (BASE_URL.endsWith('/transactions')) {
 
 // ── Shared fetch wrapper ────────────────────────────────────────────────────
 const request = async (url, options = {}) => {
+  const user = JSON.parse(localStorage.getItem('user'));
+  
+  if (!options.headers) {
+    options.headers = {};
+  }
+  
+  if (user && user.token) {
+    options.headers['Authorization'] = `Bearer ${user.token}`;
+  }
+
   const res = await fetch(url, options);
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
-    throw new Error(body.error || `Request failed: ${res.status}`);
+    throw { response: { data: body }, message: body.error || `Request failed: ${res.status}` };
   }
   return res.json();
+};
+
+const api = {
+  post: async (path, data) => {
+    const res = await request(`${BASE_URL}${path}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return { data: res };
+  }
 };
 
 // ── Transactions ────────────────────────────────────────────────────────────
@@ -56,3 +77,5 @@ export const fetchCategories = () =>
  */
 export const fetchSummary = (months = 6) =>
   request(`${BASE_URL}/summary?months=${months}`);
+
+export default api;

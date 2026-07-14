@@ -5,6 +5,9 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Transaction, { CATEGORIES } from './models/Transaction.js';
+import User from './models/User.js';
+import authRoutes from './routes/auth.js';
+import { protect } from './middleware/authMiddleware.js';
 
 dotenv.config();
 
@@ -37,12 +40,15 @@ mongoose.connection.on('error', (err) => {
   console.error('❌ MongoDB connection error:', err.message);
 });
 
+// ─── Authentication Routes ──────────────────────────────────────────────────
+app.use('/api/auth', authRoutes);
+
 // ─── GET /api/transactions?month=5&year=2026 ────────────────────────────────
-app.get('/api/transactions', async (req, res) => {
+app.get('/api/transactions', protect, async (req, res) => {
   const { month, year } = req.query;
 
   try {
-    let query = {};
+    let query = { user: req.user._id };
     if (month && year) {
       const m = parseInt(month, 10);
       const y = parseInt(year, 10);
@@ -59,7 +65,7 @@ app.get('/api/transactions', async (req, res) => {
 });
 
 // ─── POST /api/transactions ─────────────────────────────────────────────────
-app.post('/api/transactions', async (req, res) => {
+app.post('/api/transactions', protect, async (req, res) => {
   const { type, description, value, category, date } = req.body;
 
   if (!type || !description || value == null || !category) {
@@ -71,6 +77,7 @@ app.post('/api/transactions', async (req, res) => {
 
   try {
     const transaction = new Transaction({ 
+      user: req.user._id,
       type, 
       description, 
       value, 
@@ -85,12 +92,19 @@ app.post('/api/transactions', async (req, res) => {
 });
 
 // ─── DELETE /api/transactions/:id ───────────────────────────────────────────
-app.delete('/api/transactions/:id', async (req, res) => {
+app.delete('/api/transactions/:id', protect, async (req, res) => {
   const { id } = req.params;
 
   try {
-    const deleted = await Transaction.findByIdAndDelete(id);
-    if (!deleted) return res.status(404).json({ error: 'Transaction not found' });
+    const transaction = await Transaction.findById(id);
+    if (!transaction) return res.status(404).json({ error: 'Transaction not found' });
+    
+    // Check if user owns the transaction
+    if (transaction.user.toString() !== req.user._id.toString()) {
+      return res.status(401).json({ error: 'User not authorized' });
+    }
+
+    await transaction.deleteOne();
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -98,7 +112,7 @@ app.delete('/api/transactions/:id', async (req, res) => {
 });
 
 // ─── PUT /api/transactions/:id ──────────────────────────────────────────────
-app.put('/api/transactions/:id', async (req, res) => {
+app.put('/api/transactions/:id', protect, async (req, res) => {
   const { id } = req.params;
   const { description, value, category, date } = req.body;
 
@@ -113,10 +127,17 @@ app.put('/api/transactions/:id', async (req, res) => {
     if (category    !== undefined) updateData.category    = category;
     if (date        !== undefined) updateData.date        = date;
 
+    const transaction = await Transaction.findById(id);
+    if (!transaction) return res.status(404).json({ error: 'Transaction not found' });
+
+    // Check if user owns the transaction
+    if (transaction.user.toString() !== req.user._id.toString()) {
+      return res.status(401).json({ error: 'User not authorized' });
+    }
+
     const updated = await Transaction.findByIdAndUpdate(
       id, updateData, { new: true, runValidators: true }
     );
-    if (!updated) return res.status(404).json({ error: 'Transaction not found' });
     res.json(updated);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -130,7 +151,7 @@ app.get('/api/categories', (_req, res) => {
 
 // ─── GET /api/summary?months=6 ──────────────────────────────────────────────
 // Returns [{year, month, income, expense}] for the last N months
-app.get('/api/summary', async (req, res) => {
+app.get('/api/summary', protect, async (req, res) => {
   const numMonths = Math.min(parseInt(req.query.months || '6', 10), 24);
 
   // Build list of {year, month} for the range.
@@ -141,7 +162,7 @@ app.get('/api/summary', async (req, res) => {
     // Always include at least the next month to show upcoming budget planning
     let endRef = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
     
-    const latestTx = await Transaction.findOne().sort({ date: -1 });
+    const latestTx = await Transaction.findOne({ user: req.user._id }).sort({ date: -1 });
     if (latestTx && latestTx.date > endRef) {
       endRef = new Date(latestTx.date);
     }
@@ -161,7 +182,7 @@ app.get('/api/summary', async (req, res) => {
 
   try {
     const earliest = new Date(Date.UTC(periods[0].year, periods[0].month - 1, 1));
-    const txs = await Transaction.find({ date: { $gte: earliest } });
+    const txs = await Transaction.find({ user: req.user._id, date: { $gte: earliest } });
 
     const result = periods.map(({ year, month }) => {
       const filtered = txs.filter(t => {
@@ -185,8 +206,24 @@ app.get(/.*/, (req, res) => {
 });
 
 // ─── Start Server ───────────────────────────────────────────────────────────
+const seedAdmin = async () => {
+  try {
+    const adminExists = await User.findOne({ email: 'admin@demo.com' });
+    if (!adminExists) {
+      await User.create({
+        email: 'admin@demo.com',
+        password: 'admin123'
+      });
+      console.log('✅ Demo Admin seeded: admin@demo.com / admin123');
+    }
+  } catch (err) {
+    console.error('Failed to seed admin:', err.message);
+  }
+};
+
 const startServer = async () => {
   await connectDB();
+  await seedAdmin();
 
   const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Server running on http://localhost:${PORT}`);
