@@ -25,7 +25,7 @@ Budgety is a production-ready personal finance application built with the MERN s
 ### Prerequisites
 
 -   **Node.js**: [Download & Install Node.js](https://nodejs.org/)
--   **MongoDB**: [Download MongoDB Community Server](https://www.mongodb.com/try/download/community) (Make sure it's running locally on port 27017).
+-   **MongoDB**: An active MongoDB Atlas cluster or a local instance of [MongoDB Community Server](https://www.mongodb.com/try/download/community).
 
 ### Installation
 
@@ -42,10 +42,11 @@ Budgety is a production-ready personal finance application built with the MERN s
     ```
 
 3.  **Configure Environment Variables**:
-    Create a `.env` file in `Backend/server/`:
+    Create a `.env` file in `Backend/server/` and provide your MongoDB connection string and a secure JWT Secret:
     ```env
-    MONGODB_URI=mongodb://127.0.0.1:27017/budget-calculator
+    MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.example.mongodb.net/?retryWrites=true&w=majority
     PORT=5000
+    JWT_SECRET=your_super_secret_key_here
     ```
 
 ---
@@ -53,12 +54,19 @@ Budgety is a production-ready personal finance application built with the MERN s
 ## 💻 Usage
 
 ### Development Mode
-Runs the backend and the Vite dev server concurrently.
+Runs the backend and the Vite dev server concurrently using a single command.
 ```bash
 npm run dev
 ```
 -   **Frontend**: `http://localhost:5173`
 -   **Backend**: `http://localhost:5000`
+
+### 🔑 Demo Authentication
+A demo admin user is automatically created in the database when the backend server starts. You can use these credentials to quickly access the dashboard without registering:
+- **Email:** `admin@demo.com`
+- **Password:** `admin123`
+
+*Tip: For maximum convenience, you can click the **"Login as Demo Admin"** button on the Login page to securely log in with these credentials in a single click.*
 
 ### Production Mode
 Builds the frontend and serves it through the Express backend.
