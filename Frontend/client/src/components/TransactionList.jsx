@@ -1,6 +1,6 @@
 import TransactionItem from './TransactionItem';
 
-const TransactionList = ({ transactions, totalIncome, onDelete, onUpdate }) => {
+const TransactionList = ({ transactions, totalIncome, onDelete, onEdit }) => {
   if (transactions.length === 0) {
     return (
       <div className="container" style={{ width: '100%' }}>
@@ -18,7 +18,7 @@ const TransactionList = ({ transactions, totalIncome, onDelete, onUpdate }) => {
               item={item}
               totalIncome={totalIncome}
               onDelete={onDelete}
-              onUpdate={onUpdate}
+              onEdit={onEdit}
             />
           </div>
         ))}

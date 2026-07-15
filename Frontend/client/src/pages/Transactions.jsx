@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { useBudget } from '../context/BudgetContext';
-import AddTransactionForm from '../components/AddTransactionForm';
+import TransactionModal from '../components/AddTransactionModal';
 import MonthFilter from '../components/MonthFilter';
 import TransactionList from '../components/TransactionList';
 
@@ -19,14 +20,26 @@ const Transactions = () => {
     handleDelete,
   } = useBudget();
 
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [editingTx, setEditingTx] = useState(null); // transaction being edited, or null
+
   const fmt = (n) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
 
   return (
     <div className="page">
-      <div className="page__header">
-        <h1 className="page__title">Transactions</h1>
-        <p className="page__subtitle">Manage your income and expenses</p>
+      <div className="page__header page__header--with-action">
+        <div>
+          <h1 className="page__title">Transactions</h1>
+          <p className="page__subtitle">Manage your income and expenses</p>
+        </div>
+        <button
+          type="button"
+          className="add-trigger-btn"
+          onClick={() => setAddModalOpen(true)}
+        >
+          <span aria-hidden="true">＋</span> Add Transaction
+        </button>
       </div>
 
       <div className="stat-grid stat-grid--3" style={{ marginBottom: 40 }}>
@@ -53,10 +66,6 @@ const Transactions = () => {
         </div>
       </div>
 
-      <div className="transactions-bar" style={{ padding: '20px 0', marginBottom: 40 }}>
-        <AddTransactionForm onAdd={handleAdd} />
-      </div>
-
       <div className="transactions-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 20px', marginBottom: 20 }}>
         <div className="history-info">
           <span style={{ fontSize: 14, fontWeight: 600, color: '#1a2340' }}>
@@ -79,10 +88,36 @@ const Transactions = () => {
             transactions={transactions}
             totalIncome={totalIncome}
             onDelete={handleDelete}
-            onUpdate={handleUpdate}
+            onEdit={setEditingTx}
           />
         </div>
       )}
+
+      {/* Floating action button — always reachable while scrolling the list */}
+      <button
+        type="button"
+        className="fab"
+        onClick={() => setAddModalOpen(true)}
+        aria-label="Add transaction"
+      >
+        ＋
+      </button>
+
+      {/* Add */}
+      <TransactionModal
+        open={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onAdd={handleAdd}
+      />
+
+      {/* Edit — keyed by id so switching between items remounts with fresh seed */}
+      <TransactionModal
+        mode="edit"
+        open={!!editingTx}
+        transaction={editingTx}
+        onClose={() => setEditingTx(null)}
+        onUpdate={handleUpdate}
+      />
     </div>
   );
 };

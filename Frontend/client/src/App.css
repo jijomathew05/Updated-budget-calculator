@@ -997,3 +997,517 @@ h2 {
   background-color: rgba(255, 255, 255, 0.05);
   color: var(--text-primary);
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ADD TRANSACTION — modal flow
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* Page header with a primary action on the right */
+.page__header--with-action {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.add-trigger-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(40, 185, 181, 0.3);
+  transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+}
+.add-trigger-btn:hover {
+  background: var(--primary-dark);
+  box-shadow: 0 4px 12px rgba(40, 185, 181, 0.4);
+}
+.add-trigger-btn:active { transform: translateY(1px); }
+.add-trigger-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Floating action button (FAB) */
+.fab {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  font-size: 28px;
+  font-weight: 300;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(40, 185, 181, 0.45);
+  z-index: 50;
+  display: none; /* shown via media query on wide screens */
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+}
+.fab:hover {
+  background: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(40, 185, 181, 0.55);
+}
+.fab:active { transform: translateY(0); }
+.fab:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+@media (min-width: 768px) {
+  .fab { display: inline-flex; }
+}
+
+/* ── Modal overlay + dialog ─────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 35, 64, 0.55);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 100;
+  animation: modal-fade-in 0.18s ease-out;
+}
+@keyframes modal-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.modal {
+  width: 100%;
+  max-width: 480px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: modal-slide-up 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes modal-slide-up {
+  from { opacity: 0; transform: translateY(24px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  /* --accent is injected inline (teal for income, red for expense) */
+  box-shadow: inset 0 3px 0 var(--accent, var(--primary));
+}
+.modal__title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+.modal__close {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+.modal__close:hover {
+  background: #f0f0f0;
+  color: var(--text-primary);
+}
+.modal__close:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+.modal__form {
+  padding: 20px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ── Income/Expense segmented toggle ────────────────────────────────────── */
+.modal__type-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  background: #f4f6fb;
+  padding: 4px;
+  border-radius: var(--radius-md);
+}
+.modal__type-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+}
+.modal__type-btn:hover:not(.is-active) {
+  color: var(--text-primary);
+}
+.modal__type-btn.is-active { color: #fff; }
+.modal__type-btn--income.is-active {
+  background: #28B9B5;
+  box-shadow: 0 2px 6px rgba(40, 185, 181, 0.35);
+}
+.modal__type-btn--expense.is-active {
+  background: #FF5049;
+  box-shadow: 0 2px 6px rgba(255, 80, 73, 0.35);
+}
+/* Locked type toggle in edit mode */
+.modal__type-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+.modal__type-btn:disabled:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Small helper text shown under the type toggle in edit mode */
+.modal__hint {
+  margin: -8px 0 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+.modal__type-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+.modal__type-icon { font-size: 16px; font-weight: 700; }
+
+/* ── Fields ─────────────────────────────────────────────────────────────── */
+.modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.modal__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.modal__input {
+  width: 100%;
+  border: 1px solid var(--border);
+  background: #fff;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--text-primary);
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  transition: border 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+.modal__input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(40, 185, 181, 0.15);
+}
+.modal__input[aria-invalid="true"] {
+  border-color: #FF5049;
+  box-shadow: 0 0 0 3px rgba(255, 80, 73, 0.12);
+}
+
+.modal__row {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 480px) {
+  .modal__row { grid-template-columns: 1fr; }
+}
+
+/* Amount input with leading $ symbol */
+.modal__amount {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  transition: border 0.2s, box-shadow 0.2s;
+  overflow: hidden;
+}
+.modal__amount:focus-within {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(40, 185, 181, 0.15);
+}
+.modal__amount-symbol {
+  padding: 0 6px 0 12px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+}
+.modal__input--amount {
+  border: none;
+  box-shadow: none;
+  padding-left: 0;
+}
+.modal__input--amount:focus {
+  box-shadow: none;
+}
+
+.modal__error {
+  margin: 0;
+  font-size: 12px;
+  color: #FF5049;
+}
+
+/* ── Category chips ─────────────────────────────────────────────────────── */
+.modal__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.modal__chip {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 7px 14px;
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text-secondary);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.modal__chip:hover {
+  border-color: var(--primary);
+  color: var(--text-primary);
+}
+.modal__chip.is-selected {
+  /* --chip-accent injected inline = teal (income) / red (expense) */
+  background: var(--chip-accent, var(--primary));
+  border-color: var(--chip-accent, var(--primary));
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+.modal__chip:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* ── Action buttons ─────────────────────────────────────────────────────── */
+.modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+.modal__btn {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.18s;
+  border: none;
+}
+.modal__btn--ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+.modal__btn--ghost:hover {
+  background: #f4f6fb;
+  color: var(--text-primary);
+}
+.modal__btn--primary {
+  /* --accent injected inline = teal (income) / red (expense) */
+  background: var(--accent, var(--primary));
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+.modal__btn--primary:hover {
+  filter: brightness(0.93);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+}
+.modal__btn--primary:active { transform: translateY(1px); }
+.modal__btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modal-overlay, .modal,
+  .modal-overlay *, .modal * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   REPORTS PAGE — hybrid per-month + trend
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* Generic chart card (does not conflict with the legacy .chart-container) */
+.chart-card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 22px 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+/* Section titles inside Reports (avoids the red/centered legacy .chart-title) */
+.reports-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a2340;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 16px;
+}
+
+/* ── Breakdown: donut + ranked legend side by side ──────────────────────── */
+.reports-breakdown {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) 1.1fr;
+  gap: 28px;
+  align-items: start;
+}
+.reports-breakdown__chart .reports-section-title,
+.reports-breakdown__legend .reports-section-title {
+  margin-bottom: 12px;
+}
+.reports-breakdown__legend {
+  min-width: 0; /* allow grid child to shrink and scroll if needed */
+}
+
+.category-donut {
+  display: flex;
+  justify-content: center;
+}
+.donut-center__total {
+  font-size: 22px;
+  font-weight: 700;
+  fill: #1a2340;
+}
+.donut-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 280px;
+  color: #bbb;
+  font-size: 14px;
+  font-style: italic;
+  text-align: center;
+}
+.donut-empty__icon { font-size: 42px; margin-bottom: 8px; }
+
+/* ── Ranked category legend ─────────────────────────────────────────────── */
+.reports-legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.reports-legend__row {
+  display: grid;
+  grid-template-columns: 14px minmax(70px, 110px) 1fr 38px auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+.reports-legend__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.reports-legend__name {
+  color: #1a2340;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.reports-legend__bar {
+  height: 8px;
+  background: #f0f0f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.reports-legend__bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.5s ease;
+}
+.reports-legend__pct {
+  color: #999;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.reports-legend__amt {
+  color: #1a2340;
+  font-weight: 700;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ── Trend card ─────────────────────────────────────────────────────────── */
+.reports-trend .reports-section-title {
+  margin-bottom: 12px;
+}
+
+/* ── Responsive collapse ────────────────────────────────────────────────── */
+@media (max-width: 860px) {
+  .reports-breakdown {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .reports-legend__row {
+    grid-template-columns: 14px minmax(60px, 90px) 1fr auto;
+  }
+  .reports-legend__pct { display: none; }
+}
+@media (max-width: 540px) {
+  .reports-legend__row {
+    grid-template-columns: 14px 1fr auto;
+  }
+  .reports-legend__bar { display: none; }
+}
