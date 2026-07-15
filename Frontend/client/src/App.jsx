@@ -4,8 +4,7 @@ import { BudgetProvider } from './context/BudgetContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Layout from './components/Layout';
 import Dashboard      from './pages/Dashboard';
-import AddTransaction from './pages/AddTransaction';
-import History        from './pages/History';
+import Transactions   from './pages/Transactions';
 import Reports        from './pages/Reports';
 import Settings       from './pages/Settings';
 import Login          from './pages/Login';
@@ -26,8 +25,7 @@ function App() {
                 <Layout>
                   <Routes>
                     <Route path="/"                element={<Dashboard />}      />
-                    <Route path="/add-transaction" element={<AddTransaction />} />
-                    <Route path="/history"         element={<History />}        />
+                    <Route path="/transactions"    element={<Transactions />}   />
                     <Route path="/reports"         element={<Reports />}        />
                     <Route path="/settings"        element={<Settings />}       />
                   </Routes>

@@ -413,18 +413,17 @@ body {
 .add__btn:focus { outline: none; }
 
 .container {
-  width: 1000px;
-  margin: 60px auto;
-  display: flex;
-  justify-content: space-between;
+  width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
 }
 
 .income {
-  width: 475px;
+  width: 100%;
 }
 
 .expenses {
-  width: 475px;
+  width: 100%;
 }
 
 h2 {
